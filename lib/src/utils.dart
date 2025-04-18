@@ -50,8 +50,14 @@ Future<Set<File>> resolvePubspecFiles(ArgResults args) async {
   if (!stdin.hasTerminal) {
     final piped = await stdin.transform(utf8.decoder).transform(LineSplitter()).toList();
     for (var line in piped) {
-      final file = File(line.trim());
-      if (file.existsSync()) files.add(file.absolute);
+      final trimmedLine = line.trim();
+      if (trimmedLine.endsWith('pubspec.yaml')) {
+        final file = File(trimmedLine);
+        if (file.existsSync()) files.add(file.absolute);
+      } else {
+        final file = File('$trimmedLine/pubspec.yaml');
+        if (file.existsSync()) files.add(file.absolute);
+      }
     }
   }
 
