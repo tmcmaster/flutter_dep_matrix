@@ -12,3 +12,11 @@ Future<T> withTempDir<T>(Future<T> Function(Directory dir) callback) async {
     }
   }
 }
+
+Future<bool> isExecutableAvailable(String executable) async {
+  final result = await Process.run(
+    Platform.isWindows ? 'where' : 'which',
+    [executable],
+  );
+  return result.exitCode == 0;
+}

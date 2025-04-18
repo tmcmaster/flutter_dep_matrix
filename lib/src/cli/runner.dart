@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_dep_matrix/src/cli/arg_parser.dart';
 import 'package:flutter_dep_matrix/src/io/file_resolver.dart';
 import 'package:flutter_dep_matrix/src/io/preview.dart';
+import 'package:flutter_dep_matrix/src/io/utils.dart';
 import 'package:flutter_dep_matrix/src/matrix/builder.dart';
 import 'package:flutter_dep_matrix/src/matrix/csv_generator.dart';
 
@@ -13,6 +14,17 @@ void run(List<String> args) async {
     return;
   }
 
+  if (results['preview']) {
+    if (!(await isExecutableAvailable('vd'))) {
+      print("\n=======================================================");
+      print("To Preview the CSV dependency matrix VisiData is required.");
+      print('The VisiData cli is not on the local execution path.');
+      print('VisiData can be found at https://www.visidata.org/');
+      print('Installing VisiData: https://www.visidata.org/install/');
+      print("=======================================================\n");
+      exit(1);
+    }
+  }
   final pubspecFiles = await resolvePubspecFiles(results);
 
   final pubSpecFile = File('pubspec.yaml');
