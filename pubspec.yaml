@@ -1,20 +1,23 @@
 name: flutter_dep_matrix
-description: "A new Flutter package project."
-version: 0.0.1
-homepage:
+description: "Command line tool for aggregating dependencies from multiple packages and displaying the 
+dependencies as a matrix."
+version: 0.0.2+2
+repository: git@github.com:tmcmaster/flutter_dep_matrix.git
 
 environment:
-  sdk: ^3.7.2
-  flutter: ">=1.17.0"
+  sdk: ">=2.17.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
+  args: ^2.7.0
+  yaml: ^3.1.3
+  path: ^1.9.1
+  process_run: ^1.2.4
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
 
 executables:
   flutter_dep_matrix: flutter_dep_matrix
