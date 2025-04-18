@@ -1,0 +1,26 @@
+// final scriptPath = resolveRealPath(scriptFile.path);
+// final csvPath = resolveRealPath(csvFile.path);
+// print('Opening ${csvFile.path} in Numbers with script: ${scriptFile.path}');
+// print('--------- Process.run("osascript", [$scriptPath, $csvPath])');
+// await Process.run('osascript', [scriptFile.path, csvFile.path], runInShell: true);
+// await Process.run('open', ['-a', 'Numbers', file.path]);
+// final scriptFile = (await createAppleScriptFile(tempDir)).absolute;
+
+Future<File> createAppleScriptFile(Directory tempDir) async {
+  final scriptContent = '''
+on run argv
+    set filePath to item 1 of argv
+    tell application "Numbers"
+        activate
+        set theDoc to open POSIX file filePath
+        tell table 1 of sheet 1 of theDoc
+            set header row count to 1
+            set header column count to 1
+        end tell
+    end tell
+end run
+''';
+
+  final scriptFile = File('${tempDir.path}/open-numbers.scpt');
+  return await scriptFile.writeAsString(scriptContent);
+}

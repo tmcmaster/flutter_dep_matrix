@@ -217,3 +217,34 @@ Map<String, List<LocalDependency>> extractLocalDependencies(YamlMap yamlMap) {
 
   return localDeps;
 }
+
+Future<T> withTempDir<T>(Future<T> Function(Directory dir) callback) async {
+  final tempDir = await Directory.systemTemp.createTemp('flutter_dep_matrix_');
+  // print('Created: ${tempDir}');
+  try {
+    return await callback(tempDir);
+  } finally {
+    if (await tempDir.exists()) {
+      await tempDir.delete(recursive: true);
+      // print('Deleted: ${tempDir}');
+    }
+  }
+}
+
+Future<File> saveCsvToFile(Directory tempDir, csv) async {
+  final csvFile = File(p.join(tempDir.path, 'dependencies.csv'));
+  await csvFile.writeAsString(csv);
+  return csvFile;
+}
+
+void previewCsvFile(csv) {
+  withTempDir((tempDir) async {
+    final csvFile = await saveCsvToFile(tempDir, csv);
+    await Process.run('vd', [csvFile.path]);
+  });
+}
+
+String resolveRealPath(String path) {
+  final result = Process.runSync('realpath', [path]);
+  return result.stdout.toString().trim();
+}
