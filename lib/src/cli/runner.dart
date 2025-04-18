@@ -17,6 +17,7 @@ void run(List<String> args) async {
     print('Pubspec Files: ${pubspecFiles.map((f) => f.path).join(',')}');
     print('================================================');
   }
+
   final dependencyMatrix = await buildDependencyMatrix(pubspecFiles);
   print('###################################################################################################');
   print('---###--->>> Path Version: [${dependencyMatrix..matrix['firebase_auth'].runtimeType}]');
