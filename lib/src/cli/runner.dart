@@ -6,11 +6,25 @@ import 'package:flutter_dep_matrix/src/io/preview.dart';
 import 'package:flutter_dep_matrix/src/io/utils.dart';
 import 'package:flutter_dep_matrix/src/matrix/builder.dart';
 import 'package:flutter_dep_matrix/src/matrix/csv_generator.dart';
+import 'package:flutter_dep_matrix/src/setup/setup_checks.dart';
 
 void run(List<String> args) async {
   final results = argParser.parse(args);
   if (results['help']) {
     printUsage();
+    return;
+  }
+
+  if (results['setup']) {
+    print('');
+    final errors = setupChecks();
+    if (errors.isNotEmpty) {
+      print('\nProject setup for flutter_dep_matrix is incomplete:\n');
+      for (final error in errors) {
+        print('  - $error');
+      }
+    }
+    print('');
     return;
   }
 

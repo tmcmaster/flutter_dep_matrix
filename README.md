@@ -11,6 +11,7 @@ It's designed for developers working across multiple packages or mono repos to a
 - Supports CSV and TSV output.
 - Live preview using [VisiData](https://www.visidata.org/).
 - Useful for detecting version drift, inconsistencies, and auditing local repos.
+- Can validate required structure and configuration for the project
 
 ## Installation
 
@@ -31,16 +32,17 @@ flutter_dep_matrix [options]
 
 ### Options
 
-| Option         | Abbr | Description                                                   |
-|----------------|------|---------------------------------------------------------------|
-| `--file`       | `-f` | Specific `pubspec.yaml` file(s)                               |
-| `--dir`        | `-d` | Directory(ies) to search for `pubspec.yaml` files             |
-| `--ext`        | `-e` | External dependencies to include (e.g., from `.pub-cache`)    |
-| `--verbose`    | `-v` | Enables verbose output                                        |
-| `--preview`    |      | Opens the matrix directly in [VisiData](https://www.visidata.org/) |
-| `--csv`        | `-c` | Output format as CSV (default: true)                          |
-| `--tsv`        | `-t` | Output format as TSV                                          |
-| `--help`       | `-h` | Show usage help                                               |
+| Option      | Abbr | Description                                                        |
+|-------------|------|--------------------------------------------------------------------|
+| `--file`    | `-f` | Specific `pubspec.yaml` file(s)                                    |
+| `--dir`     | `-d` | Directory(ies) to search for `pubspec.yaml` files                  |
+| `--ext`     | `-e` | External dependencies to include (e.g., from `.pub-cache`)         |
+| `--verbose` | `-v` | Enables verbose output                                             |
+| `--preview` | `-p` | Opens the matrix directly in [VisiData](https://www.visidata.org/) |
+| `--setup`   | `-s` | Assist in setting up flutter_dep_matrix                            |
+| `--csv`     | `-c` | Output format as CSV (default: true)                               |
+| `--tsv`     | `-t` | Output format as TSV                                               |
+| `--help`    | `-h` | Show usage help                                                    |
 
 ## Examples
 
