@@ -1,4 +1,4 @@
-import 'package:flutter_dep_matrix/src/dependency_type.dart';
+import 'package:flutter_dep_matrix/src/model/dependency_type.dart';
 
 abstract class LocalDependency {
   DependencyType get type;

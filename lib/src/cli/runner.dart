@@ -1,17 +1,11 @@
-import 'package:args/args.dart';
-import 'package:flutter_dep_matrix/src/utils.dart';
-
-final _argParser = ArgParser()
-  ..addMultiOption('file', abbr: 'f', help: 'Specific pubspec.yaml file(s)')
-  ..addMultiOption('dir', abbr: 'd', help: 'Directory(ies) to search')
-  ..addFlag('verbose', abbr: 'v', negatable: false, help: 'Verbose output')
-  ..addFlag('preview', negatable: false, help: 'Preview the output in Numbers (macOS only)')
-  ..addFlag('csv', abbr: 'c', negatable: false, help: 'CSV Mode', defaultsTo: true)
-  ..addFlag('tsv', abbr: 't', negatable: false, help: 'TSV Mode')
-  ..addFlag('help', abbr: 'h', negatable: false, help: 'Show usage');
+import 'package:flutter_dep_matrix/src/cli/arg_parser.dart';
+import 'package:flutter_dep_matrix/src/io/file_resolver.dart';
+import 'package:flutter_dep_matrix/src/io/preview.dart';
+import 'package:flutter_dep_matrix/src/matrix/builder.dart';
+import 'package:flutter_dep_matrix/src/matrix/csv_generator.dart';
 
 void run(List<String> args) async {
-  final results = _argParser.parse(args);
+  final results = argParser.parse(args);
   if (results['help']) {
     printUsage();
     return;
@@ -24,6 +18,11 @@ void run(List<String> args) async {
     print('================================================');
   }
   final dependencyMatrix = await buildDependencyMatrix(pubspecFiles);
+  print('###################################################################################################');
+  print('---###--->>> Path Version: [${dependencyMatrix..matrix['firebase_auth'].runtimeType}]');
+  print('###################################################################################################');
+
+  // exit(1);
   if (results['tsv']) {
     print(dependencyMatrix);
   } else if (results['csv']) {
@@ -40,11 +39,4 @@ void run(List<String> args) async {
   // final localRepoMatrix = await buildLocalRepoDependencyMatrix(pubspecFiles);
   // print(localRepoMatrix);
   // print('================================================');
-}
-
-void printUsage() {
-  print('Usage: flutter_dep_matrix [options]');
-  print('Generates a dependency matrix from pubspec.yaml files.\n');
-  print('Options:');
-  print(_argParser.usage);
 }

@@ -20,6 +20,7 @@ class DependencyMatrix {
 
     // Sorted dependency rows
     final sortedDeps = matrix.keys.toList()..sort();
+    print('=======>>> [$sortedDeps]');
     for (final dep in sortedDeps) {
       buffer.write(dep.padRight(30));
       for (final pkg in packageNames) {
