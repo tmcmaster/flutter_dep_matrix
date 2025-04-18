@@ -6,6 +6,10 @@ class DependencyMatrix {
 
   @override
   String toString() {
+    return 'DependencyMatrix(matrix: $matrix, packageNames: $packageNames)';
+  }
+
+  String toTableString() {
     final buffer = StringBuffer();
 
     // Header row
@@ -15,12 +19,10 @@ class DependencyMatrix {
     }
     buffer.writeln();
 
-    // Divider
     buffer.writeln('-' * (30 + 20 * packageNames.length));
 
-    // Sorted dependency rows
     final sortedDeps = matrix.keys.toList()..sort();
-    print('=======>>> [$sortedDeps]');
+
     for (final dep in sortedDeps) {
       buffer.write(dep.padRight(30));
       for (final pkg in packageNames) {

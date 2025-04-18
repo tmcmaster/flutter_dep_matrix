@@ -1,6 +1,7 @@
 import 'package:flutter_dep_matrix/src/model/git_dependency.dart';
 import 'package:flutter_dep_matrix/src/model/local_dependency.dart';
 import 'package:flutter_dep_matrix/src/model/path_dependency.dart';
+import 'package:process_run/stdio.dart';
 import 'package:yaml/yaml.dart';
 
 Map<String, String> extractDependencies(YamlMap yamlMap) {
@@ -61,4 +62,21 @@ Map<String, List<LocalDependency>> extractLocalDependencies(YamlMap yamlMap) {
   inspectSection(yamlMap['dev_dependencies']);
 
   return localDeps;
+}
+
+Future<String?> extractPackageName(File pubspecFile) async {
+  if (!pubspecFile.existsSync()) return null;
+
+  try {
+    final content = await pubspecFile.readAsString();
+    final yaml = loadYaml(content);
+    final name = yaml['name'];
+    if (name is String) {
+      return name;
+    }
+  } catch (e) {
+    stderr.writeln('Failed to extract package name from ${pubspecFile.path}: $e');
+  }
+
+  return null;
 }

@@ -18,10 +18,7 @@ Future<DependencyMatrix> buildDependencyMatrix(Set<File> files) async {
       packageNames.add(name);
 
       final deps = extractDependencies(yamlMap);
-      for (var entry in deps.entries) {
-        matrix.putIfAbsent(entry.key, () => {});
-        matrix[entry.key]![name] = entry.value;
-      }
+      matrix[name] = deps;
     } catch (e) {
       stderr.writeln('Failed to read ${file.path}: $e');
     }
@@ -30,7 +27,7 @@ Future<DependencyMatrix> buildDependencyMatrix(Set<File> files) async {
   return DependencyMatrix(matrix, packageNames);
 }
 
-Future<LocalDependencyMatrix> buildLocalRepoDependencyMatrix(Set<File> files) async {
+Future<LocalDependencyMatrix> buildLocalRepoDependencyMatrixHold(Set<File> files) async {
   final Map<String, List<LocalDependency>> matrix = {};
   final packageNames = <String>[];
 

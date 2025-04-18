@@ -3,25 +3,10 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:path/path.dart' as p;
-
-Future<T> withTempDir<T>(Future<T> Function(Directory dir) callback) async {
-  final tempDir = await Directory.systemTemp.createTemp('flutter_dep_matrix_');
-  // print('Created: ${tempDir}');
-  try {
-    return await callback(tempDir);
-  } finally {
-    if (await tempDir.exists()) {
-      await tempDir.delete(recursive: true);
-      // print('Deleted: ${tempDir}');
-    }
-  }
-}
+import 'package:yaml/yaml.dart';
 
 Future<Set<File>> resolvePubspecFiles(ArgResults args) async {
   final files = <File>{};
-
-  final pubSpecFile = File('pubspec.yaml');
-  files.add(pubSpecFile);
 
   if (!stdin.hasTerminal) {
     final piped = await stdin.transform(utf8.decoder).transform(LineSplitter()).toList();
@@ -61,13 +46,9 @@ Future<Set<File>> resolvePubspecFiles(ArgResults args) async {
     }
   }
 
-  for (var extDependency in args['ext']) {
-    final pubSpecFile = File('~/.pub-cache/hosted/pub.dev/$extDependency/pubspec.yaml');
-    print('--- External Dependency : $extDependency : $pubSpecFile');
-    if (pubSpecFile.existsSync()) {
-      files.add(pubSpecFile);
-    }
-  }
+  final extPackageName = args['ext'];
+  final extPackageFiles = findExternalDependencyPubspecFiles(extPackageName);
+  files.addAll(extPackageFiles);
 
   if (files.isEmpty) {
     final base = Directory.current;
@@ -79,6 +60,30 @@ Future<Set<File>> resolvePubspecFiles(ArgResults args) async {
           .expand((d) => d.listSync().whereType<File>().where((f) => p.basename(f.path) == 'pubspec.yaml')),
     ];
     files.addAll(pubspecs.map((f) => f.absolute));
+  }
+
+  return files;
+}
+
+Set<File> findExternalDependencyPubspecFiles(List<String> dependencies) {
+  final files = <File>{};
+
+  final file = File('pubspec.lock');
+  if (file.existsSync()) {
+    final content = file.readAsStringSync();
+    final yaml = loadYaml(content);
+    final packages = yaml['packages'] as YamlMap?;
+    if (packages != null) {
+      for (final dependency in dependencies) {
+        if (packages.containsKey(dependency)) {
+          final dep = packages[dependency] as YamlMap?;
+          final version = dep?['version'];
+          if (version != null) {
+            files.add(File('packages/cache/$dependency-${version}/pubspec.yaml'));
+          }
+        }
+      }
+    }
   }
 
   return files;
