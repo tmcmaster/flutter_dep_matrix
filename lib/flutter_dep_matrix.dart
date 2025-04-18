@@ -5,6 +5,8 @@ final _argParser = ArgParser()
   ..addMultiOption('file', abbr: 'f', help: 'Specific pubspec.yaml file(s)')
   ..addMultiOption('dir', abbr: 'd', help: 'Directory(ies) to search')
   ..addFlag('verbose', abbr: 'v', negatable: false, help: 'Verbose output')
+  ..addFlag('csv', abbr: 'c', negatable: false, help: 'CSV Mode', defaultsTo: true)
+  ..addFlag('tsv', abbr: 't', negatable: false, help: 'TSV Mode')
   ..addFlag('help', abbr: 'h', negatable: false, help: 'Show usage');
 
 void run(List<String> args) async {
@@ -21,13 +23,17 @@ void run(List<String> args) async {
     print('================================================');
   }
   final dependencyMatrix = await buildDependencyMatrix(pubspecFiles);
-  print(dependencyMatrix);
+  if (results['tsv']) {
+    print(dependencyMatrix);
+  } else if (results['csv']) {
+    final csv = generateCsv(dependencyMatrix);
+    print(csv);
+  }
+
   // print('================================================');
   // final localRepoMatrix = await buildLocalRepoDependencyMatrix(pubspecFiles);
   // print(localRepoMatrix);
   // print('================================================');
-  // final csv = generateCsv(dependencyMatrix);
-  // print(csv);
 }
 
 void printUsage() {
