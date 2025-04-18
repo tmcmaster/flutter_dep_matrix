@@ -1,12 +1,24 @@
 scripts:
-  update: dart clean; dart pub get
+  update: rps clean; dart pub get
+  clean: |
+    rm -rf .dart_tool/pub/bin/flutter_dep_matrix/
   activate:
     source: |
-      dart pub global deactivate flutter_dep_matrix
-      rm -rf ~/.pub-cache/global_packages/flutter_dep_matrix
+      dart pub get
       dart pub global activate --source path .
-    git: dart pub global activate --source git git@github.com:tmcmaster/flutter_dep_matrix.git
-  deactivate: dart pub global deactivate flutter_dep_matrix
+    repo: |
+      dart pub get
+      dart pub global activate --source git git@github.com:tmcmaster/flutter_dep_matrix.git
+  deactivate: |
+    dart pub global deactivate flutter_dep_matrix
+    rps clean
+    rm -rf ~/.pub-cache/global_packages/flutter_dep_matrix
   reactivate:
-    source: rps deactivate; dart activate source
-    git: rps deactivate; dart activate git
+    source: |
+      rps deactivate
+      rps activate source
+    repo:
+      rps deactivate
+      rps activate repo
+  list:
+    caches: find .dart_tool ~/.pub-cache  -name '*flutter_dep_matrix*' -type d
