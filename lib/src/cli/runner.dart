@@ -27,9 +27,6 @@ void run(List<String> args) async {
   }
   final pubspecFiles = await resolvePubspecFiles(results);
 
-  final pubSpecFile = File('pubspec.yaml');
-  pubspecFiles.add(pubSpecFile);
-
   if (results['verbose']) {
     print('================================================');
     print('Pubspec Files: ${pubspecFiles.map((f) => f.path).join(',')}');

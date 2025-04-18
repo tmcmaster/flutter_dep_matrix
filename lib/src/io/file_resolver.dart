@@ -8,6 +8,9 @@ import 'package:yaml/yaml.dart';
 Future<Set<File>> resolvePubspecFiles(ArgResults args) async {
   final files = <File>{};
 
+  final pubSpecFile = File('pubspec.yaml');
+  files.add(pubSpecFile);
+
   if (!stdin.hasTerminal) {
     final piped = await stdin.transform(utf8.decoder).transform(LineSplitter()).toList();
     for (var line in piped) {
@@ -50,17 +53,17 @@ Future<Set<File>> resolvePubspecFiles(ArgResults args) async {
   final extPackageFiles = findExternalDependencyPubspecFiles(extPackageName);
   files.addAll(extPackageFiles);
 
-  if (files.isEmpty) {
-    final base = Directory.current;
-    final pubspecs = [
-      ...base.listSync().whereType<File>().where((f) => p.basename(f.path) == 'pubspec.yaml'),
-      ...base
-          .listSync()
-          .whereType<Directory>()
-          .expand((d) => d.listSync().whereType<File>().where((f) => p.basename(f.path) == 'pubspec.yaml')),
-    ];
-    files.addAll(pubspecs.map((f) => f.absolute));
-  }
+  // if (files.isEmpty) {
+  final base = Directory.current;
+  final pubspecs = [
+    // ...base.listSync().whereType<File>().where((f) => p.basename(f.path) == 'pubspec.yaml'),
+    ...base
+        .listSync()
+        .whereType<Directory>()
+        .expand((d) => d.listSync().whereType<File>().where((f) => p.basename(f.path) == 'pubspec.yaml')),
+  ];
+  files.addAll(pubspecs.map((f) => f.absolute));
+  // }
 
   return files;
 }
