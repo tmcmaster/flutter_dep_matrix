@@ -4,15 +4,23 @@ description: |
   dependencies as a matrix.
 version: 0.0.3+3
 repository: git@github.com:tmcmaster/flutter_dep_matrix.git
+publish_to: none
 
 environment:
   sdk: ">=2.17.0 <4.0.0"
+
+executables:
+  flutter_dep_matrix: flutter_dep_matrix
 
 dependencies:
   args: ^2.7.0
   yaml: ^3.1.3
   path: ^1.9.1
   process_run: ^1.2.4
+  wt_logging:
+    git:
+      url: https://github.com/tmcmaster/wt_logging.git
 
-executables:
-  flutter_dep_matrix: flutter_dep_matrix
+dependency_overrides:
+  wt_logging:
+    path: ../../libraries/wt_logging
