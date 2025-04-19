@@ -26,3 +26,7 @@ Future<bool> isExecutableAvailable(String executable) async {
   _log.d('Executable($executable) availability: $isAvailable');
   return isAvailable;
 }
+
+bool isDevelopmentMode() {
+  return Platform.script.toFilePath().contains('/.dart_tool/pub/bin/');
+}

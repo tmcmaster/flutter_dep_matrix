@@ -4,7 +4,7 @@ import 'package:flutter_dep_matrix/src/io/logger.dart';
 
 final _log = createLogger('Preview', level: WTLevel.debug);
 
-Future<void> previewCsvFile(String csv) async {
+Future<void> previewCsvFileWithVisiData(String csv) async {
   _log.d('Printing CSV file to STDOUT');
   final process = await Process.start('vd', ['-'], mode: ProcessStartMode.normal);
   process.stdin.write(csv);

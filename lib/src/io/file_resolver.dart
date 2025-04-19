@@ -6,7 +6,28 @@ import 'package:flutter_dep_matrix/src/io/logger.dart';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
-final _log = createLogger('FileResolver', level: WTLevel.debug);
+final _log = createLogger('FileResolver', level: WTLevel.all);
+
+// Make sure that asserts are enabled in the debug config
+bool get isInDebugMode {
+  var inDebugMode = false;
+  assert(inDebugMode = true);
+  return inDebugMode;
+}
+
+Future<List<String>> readLinesFromStdin() async {
+  if (stdin.hasTerminal || isInDebugMode) {
+    return [];
+  }
+
+  try {
+    final pipedInput = await stdin.transform(utf8.decoder).transform(const LineSplitter()).toList();
+    return pipedInput;
+  } catch (e) {
+    stderr.writeln('Error reading from stdin: $e');
+    return [];
+  }
+}
 
 Future<Set<File>> resolvePubspecFiles(ArgResults args) async {
   final files = <File>{};
@@ -14,10 +35,10 @@ Future<Set<File>> resolvePubspecFiles(ArgResults args) async {
   final pubSpecFile = File('pubspec.yaml');
   files.add(pubSpecFile.absolute);
 
-  if (!stdin.hasTerminal) {
+  final lines = await readLinesFromStdin();
+  if (lines.isNotEmpty) {
     _log.d('Loading pubspec files from STDIN.');
-    final piped = await stdin.transform(utf8.decoder).transform(LineSplitter()).toList();
-    for (var line in piped) {
+    for (var line in lines) {
       final trimmedLine = line.trim();
       if (trimmedLine.endsWith('pubspec.yaml')) {
         final file = File(trimmedLine);
@@ -134,35 +155,35 @@ Map<String, File> collectOverriddenAndGitPubspecPaths() {
     final data = entry.value as YamlMap;
     final source = data['source'];
 
+    _log.d('🐒 Found Repo Pubspec : Name($name) : Source($source)');
+
     if (source == 'path' && overridden.contains(name)) {
       final desc = data['description'] as YamlMap;
       final rawPath = desc['path'] as String;
       final absolutePath = desc['relative'] == true ? p.normalize(p.join(projectRoot, rawPath)) : rawPath;
-
       final pubspecPath = '$absolutePath/pubspec.yaml';
-      if (File(pubspecPath).existsSync()) {
-        result[name] = File(pubspecPath);
-      }
-    }
 
-    if (source == 'git') {
+      _log.d('✅ Found Overridden Repo : Name($name) : Path($rawPath) : Pubspec: $pubspecPath');
+
+      final pubspecFile = File(pubspecPath);
+      if (pubspecFile.existsSync()) {
+        result[name] = pubspecFile;
+      } else {
+        _log.w('❌ Overridden pubspec was missing : Name($name) : ${pubspecFile.path}');
+      }
+    } else if (source == 'git') {
       final desc = data['description'] as YamlMap;
       final ref = desc['resolved-ref'] ?? desc['ref'];
-      if (ref == null) continue;
+      if (ref != null) {
+        final pubspecPath = '$pubCacheGit/${name}-$ref/pubspec.yaml';
 
-      final folderPrefix = '$pubCacheGit/${name}-$ref';
-      final pubspecPath = '$folderPrefix/pubspec.yaml';
+        _log.w('✅ Found Git Repo : Name($name) : Ref($ref): $pubspecPath');
 
-      if (File(pubspecPath).existsSync()) {
-        result[name] = File(pubspecPath);
-      } else {
-        final fallbackDir = Directory(pubCacheGit);
-        final match = fallbackDir.listSync(recursive: false).whereType<Directory>().firstWhere(
-              (d) => d.path.contains(name) && File('${d.path}/pubspec.yaml').existsSync(),
-              orElse: () => Directory(''),
-            );
-        if (match.path.isNotEmpty) {
-          result[name] = File('${match.path}/pubspec.yaml');
+        final pubspecFile = File(pubspecPath);
+        if (pubspecFile.existsSync()) {
+          result[name] = pubspecFile;
+        } else {
+          _log.w('❌ Git Repo pubspec missing : Name($name) : ${pubspecFile.path}');
         }
       }
     }

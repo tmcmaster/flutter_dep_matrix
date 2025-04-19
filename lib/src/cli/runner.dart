@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:args/args.dart';
 import 'package:flutter_dep_matrix/src/cli/arg_parser.dart';
 import 'package:flutter_dep_matrix/src/io/file_resolver.dart';
 import 'package:flutter_dep_matrix/src/io/logger.dart';
@@ -10,15 +11,25 @@ import 'package:flutter_dep_matrix/src/matrix/csv_generator.dart';
 import 'package:flutter_dep_matrix/src/matrix/extractors.dart';
 import 'package:flutter_dep_matrix/src/setup/setup_checks.dart';
 
-void run(List<String> args) async {
-  WTLogger.level = WTLevel.error;
+void main(List<String> args) async {
+  await run(args);
+}
 
-  final log = createLogger('run', level: WTLevel.debug);
+Future<void> run(List<String> args) async {
+  final log = createLogger('run', level: WTLevel.all);
 
-  final results = argParser.parse(args);
+  final ArgResults results = argParser.parse(args);
   if (results['help']) {
     printUsage();
     return;
+  }
+
+  final logLevels = results['logLevel'];
+  log.d('Log Levels: ${logLevels}');
+  if (logLevels.isNotEmpty) {
+    final logLevel = logLevels.first;
+    log.d('Log Level will be set to $logLevel');
+    WTLogger.level = WTLevel.fromString(logLevel);
   }
 
   if (results['debug']) {
@@ -57,6 +68,7 @@ void run(List<String> args) async {
       exit(1);
     }
   }
+
   final pubspecFiles = await resolvePubspecFiles(results);
 
   if (results['debug']) {
@@ -77,7 +89,7 @@ void run(List<String> args) async {
   } else if (results['csv']) {
     final csv = generateCsv(dependencyMatrix);
     if (results['preview']) {
-      previewCsvFile(csv);
+      previewCsvFileWithVisiData(csv);
     } else {
       print('==== CSV Dependency Matrix ====\n$csv');
     }

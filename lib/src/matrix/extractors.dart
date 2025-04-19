@@ -2,7 +2,7 @@ import 'package:flutter_dep_matrix/src/io/logger.dart';
 import 'package:process_run/stdio.dart';
 import 'package:yaml/yaml.dart';
 
-final _log = createLogger('Extractors', level: WTLevel.debug);
+final _log = createLogger('Extractors', level: WTLevel.trace);
 
 Map<String, String> extractDependencies(YamlMap yamlMap) {
   final deps = <String, String>{};
@@ -45,7 +45,7 @@ Future<String?> extractPackageName(File pubspecFile) async {
 (String?, Map<String, String>, YamlMap pubspecMap) collectGitDependencyVersions([
   String pubspecFileName = 'pubspec.yaml',
 ]) {
-  final result = <String, String>{};
+  final dependencyVersions = <String, String>{};
 
   final pubspecFile = File(pubspecFileName);
   final lockFile = File('pubspec.lock');
@@ -59,6 +59,8 @@ Future<String?> extractPackageName(File pubspecFile) async {
 
   final packageName = pubspec['name'];
 
+  _log.d('======================= $packageName ======================= ');
+
   final deps = <String>{};
   if (pubspec['dependencies'] != null) {
     deps.addAll((pubspec['dependencies'] as YamlMap).keys.cast<String>());
@@ -67,27 +69,68 @@ Future<String?> extractPackageName(File pubspecFile) async {
     deps.addAll((pubspec['dev_dependencies'] as YamlMap).keys.cast<String>());
   }
 
+  _log.d('===>>> Dependencies($packageName): $deps');
+
   for (final name in deps) {
     final package = packages[name] as YamlMap?;
-    if (package == null) continue;
-    if (package['source'] != 'git') continue;
-
-    final desc = package['description'] as YamlMap;
-    final resolvedRef = desc['resolved-ref'] as String?;
-    final ref = desc['ref'] as String?;
-    final version = package['version'] as String?;
-
-    if (version != null) {
-      result[name] = version;
-    } else {
-      final shaOrRef = resolvedRef ?? ref ?? 'unknown';
-      result[name] = formatRefOrSha(shaOrRef);
-    }
+    if (package != null) {
+      final source = package['source'];
+      if (source == 'git') {
+        final overrideVersion = getOverrideVersion(name, pubspec);
+        if (overrideVersion != null) {
+          _log.d('Package($name) : OverriddenVersion($overrideVersion)');
+          dependencyVersions[name] = overrideVersion;
+        } else {
+          final version = getGitVersion(package, name);
+          _log.d('Package($name) : Version($version)');
+          dependencyVersions[name] = version;
+        }
+      } else if (source == 'path') {
+        final overrideVersion = getOverrideVersion(name, pubspec);
+        if (overrideVersion != null) {
+          _log.d('Package($name) : OverriddenVersion($overrideVersion)');
+          dependencyVersions[name] = overrideVersion;
+        } else {
+          _log.t('Could not find the override version: $name');
+        }
+      } else {
+        _log.t('The source was $source: $name');
+      }
+    } else {}
   }
 
   _log.d('Returning the (packageName, result, pubspec) for : $pubspecFileName');
 
-  return (packageName, result, pubspec);
+  return (packageName, dependencyVersions, pubspec);
+}
+
+String? getOverrideVersion(String name, YamlMap pubspec) {
+  final path = pubspec['dependency_overrides']?[name]?['path'];
+
+  _log.t('=====>>>> $name : TESTING : ${pubspec["dependency_overrides"]}');
+  _log.t('=====>>>> $name : PATH : $path');
+  if (path != null) {
+    final overridePubspecFile = File('$path/pubspec.yaml');
+    _log.t('=====>>>> $name : OVERRIDE PUBSPEC : $overridePubspecFile');
+    if (overridePubspecFile.existsSync()) {
+      final overridePubspec = loadYaml(overridePubspecFile.readAsStringSync()) as YamlMap;
+      final version = overridePubspec['version'];
+      _log.t('=====>>>> $name : VERSION : $version');
+      return version;
+    } else {
+      _log.d('Could not find pubspec file for $name : Path($path) : ${overridePubspecFile.path}');
+    }
+  }
+  return null;
+}
+
+String getGitVersion(YamlMap package, String name) {
+  final desc = package['description'] as YamlMap;
+  final resolvedRef = desc['resolved-ref'] as String?;
+  final ref = desc['ref'] as String?;
+  final version = package['version'] as String?;
+  _log.d('🐯 Dependency($name): Version($version) : Ref($ref) : ResolveRef($resolvedRef)');
+  return (version != null) ? version : formatRefOrSha(resolvedRef ?? ref ?? 'unknown');
 }
 
 String formatRefOrSha(String refOrResolvedRef) {

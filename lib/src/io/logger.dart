@@ -1,5 +1,3 @@
-import 'dart:io';
-
 enum WTLevel {
   all(0),
   trace(1000),
@@ -13,13 +11,21 @@ enum WTLevel {
   final int value;
 
   const WTLevel(this.value);
+
+  static WTLevel fromString(String input) {
+    return WTLevel.values.firstWhere(
+      (e) => e.name.toLowerCase() == input.toLowerCase(),
+      orElse: () => WTLevel.warning, // default fallback if needed
+    );
+  }
 }
 
 class WTLogger {
   static WTLevel level = WTLevel.error;
 
   final prefix;
-  WTLogger(this.prefix, {WTLevel level = WTLevel.error});
+  final WTLevel _level;
+  WTLogger(this.prefix, {WTLevel level = WTLevel.error}) : _level = level;
 
   void v(dynamic message) => _printLog(WTLevel.trace, '🔍', message);
   void d(dynamic message) => _printLog(WTLevel.debug, '🐞', message);
@@ -29,13 +35,9 @@ class WTLogger {
   void t(dynamic message) => _printLog(WTLevel.trace, '💥', message);
 
   void _printLog(WTLevel level, String icon, dynamic message) {
-    if (level.value >= WTLogger.level.value) {
+    if (level.value >= WTLogger.level.value && level.value > _level.value) {
       print('$icon $prefix : $message');
     }
-  }
-
-  static bool _isDevelopmentMode() {
-    return Platform.script.toFilePath().contains('/.dart_tool/pub/bin/');
   }
 }
 
@@ -43,5 +45,5 @@ WTLogger createLogger(
   dynamic prefix, {
   WTLevel level = WTLevel.error,
 }) {
-  return WTLogger(prefix, level: WTLogger._isDevelopmentMode() ? level : WTLevel.error);
+  return WTLogger(prefix, level: level);
 }

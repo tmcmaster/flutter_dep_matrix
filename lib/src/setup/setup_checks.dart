@@ -1,6 +1,9 @@
 import 'dart:io';
 
+import 'package:flutter_dep_matrix/src/io/logger.dart';
 import 'package:yaml/yaml.dart';
+
+final _log = createLogger('Setup Checks');
 
 List<String> setupChecks() {
   return [
@@ -17,7 +20,6 @@ List<String> checkGitignoreEntries() {
     '.idea',
     'junk',
     'hold',
-    'packages/cache',
     'packages/repos',
   };
 
@@ -32,14 +34,14 @@ List<String> checkGitignoreEntries() {
   final missing = requiredEntries.difference(lines);
 
   if (missing.isEmpty) {
-    print('✅ All required entries are present in .gitignore.');
+    _log.d('✅ All required entries are present in .gitignore.');
     for (final entry in requiredEntries) {
-      print('  ✅ $entry');
+      _log.d('  ✅ $entry');
     }
   } else {
-    print('❌ Not all required entries are present in .gitignore.');
+    _log.d('❌ Not all required entries are present in .gitignore.');
     for (final entry in missing) {
-      print('  ❌ $entry');
+      _log.d('  ❌ $entry');
       errors.add('  ❌ Missing .gitignore entry: $entry');
     }
   }
@@ -51,7 +53,6 @@ List<String> checkAnalysisOptionsExcludes() {
   final errors = <String>[];
 
   final requiredExcludes = {
-    'packages/cache',
     'packages/repos',
   };
 
@@ -69,7 +70,7 @@ List<String> checkAnalysisOptionsExcludes() {
 
   if (excludes is! YamlList) {
     for (final entry in requiredExcludes) {
-      print('  ❌ $entry');
+      _log.d('  ❌ $entry');
       errors.add('❌ Missing exclude entry in analysis_options.yaml: $entry');
     }
     return errors;
@@ -79,14 +80,14 @@ List<String> checkAnalysisOptionsExcludes() {
   final missing = requiredExcludes.difference(currentExcludes);
 
   if (missing.isEmpty) {
-    print('✅ All required excludes are present in analysis_options.yaml.');
+    _log.d('✅ All required excludes are present in analysis_options.yaml.');
     for (final exclude in requiredExcludes) {
-      print('  ✅ $exclude');
+      _log.d('  ✅ $exclude');
     }
   } else {
-    print('✅ Not all required excludes are present in analysis_options.yaml.');
+    _log.d('✅ Not all required excludes are present in analysis_options.yaml.');
     for (final entry in missing) {
-      print('  ❌ $entry');
+      _log.d('  ❌ $entry');
       errors.add('❌ Missing exclude entry in analysis_options.yaml: $entry');
     }
   }
@@ -96,7 +97,7 @@ List<String> checkAnalysisOptionsExcludes() {
 
 List<String> checkPackagesStructure() {
   final errors = <String>[];
-  final requiredDirs = ['repos', 'cache'].map((d) => 'packages/$d').toSet();
+  final requiredDirs = ['repos'].map((d) => 'packages/$d').toSet();
 
   final packagesDir = Directory('packages');
   if (!packagesDir.existsSync()) {
@@ -110,16 +111,16 @@ List<String> checkPackagesStructure() {
   final missing = requiredDirs.difference(entries);
 
   if (missing.isEmpty) {
-    print('✅ "All of the required package directories are present and valid directories'
+    _log.d('✅ "All of the required package directories are present and valid directories'
         'or symlinks to directories:');
     for (final entry in entries) {
-      print('  ✅ $entry');
+      _log.d('  ✅ $entry');
     }
   } else {
-    print('❌ "Not all of the required package directories are present and valid directories'
+    _log.d('❌ "Not all of the required package directories are present and valid directories'
         'or symlinks to directories:');
     for (final name in missing) {
-      print('  ❌ $name');
+      _log.d('  ❌ $name');
       errors.add('❌ Missing "$name". It should be a directory or a symlink to a directory.');
     }
   }
