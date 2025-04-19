@@ -20,5 +20,14 @@ scripts:
     repo:
       rps deactivate
       rps activate repo
-  list:
-    caches: find .dart_tool ~/.pub-cache  -name '*flutter_dep_matrix*' -type d
+  deps:
+    tree: dart pub deps
+    list: dart pub deps --style=list
+    compact: dart pub deps --style=compact
+    matrix: flutter_dep_matrix --repos --preview
+    caches:
+      list:
+        all: find .dart_tool ~/.pub-cache ~/.pub-cache/git/cache ~/.pub-cache/hosted/pub.dev -type d -depth 2
+        project: (rps deps caches list all | grep $(basename `pwd`))
+      count: (rps deps caches list all | wc -l)
+      size: du -sh .dart_tool ~/.pub-cache
