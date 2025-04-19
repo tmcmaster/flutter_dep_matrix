@@ -11,7 +11,7 @@ import 'package:flutter_dep_matrix/src/matrix/extractors.dart';
 import 'package:flutter_dep_matrix/src/setup/setup_checks.dart';
 
 void run(List<String> args) async {
-  WTLogger.level = WTLevel.debug;
+  WTLogger.level = WTLevel.error;
 
   final log = createLogger('run', level: WTLevel.debug);
 
@@ -79,7 +79,7 @@ void run(List<String> args) async {
     if (results['preview']) {
       previewCsvFile(csv);
     } else {
-      log.d('==== CSV Dependency Matrix ====\n$csv');
+      print('==== CSV Dependency Matrix ====\n$csv');
     }
   }
 }
