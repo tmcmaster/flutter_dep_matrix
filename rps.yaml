@@ -2,24 +2,26 @@ scripts:
   update: rps clean; dart pub get
   clean: |
     rm -rf .dart_tool/pub/bin/flutter_dep_matrix/
-  activate:
-    source: |
-      dart pub get
-      dart pub global activate --source path .
-    repo: |
-      dart pub get
-      dart pub global activate --source git git@github.com:tmcmaster/flutter_dep_matrix.git
-  deactivate: |
-    dart pub global deactivate flutter_dep_matrix
-    rps clean
-    rm -rf ~/.pub-cache/global_packages/flutter_dep_matrix
-  reactivate:
-    source: |
-      rps deactivate
-      rps activate source
-    repo:
-      rps deactivate
-      rps activate repo
+  global:
+    activate:
+      source: |
+        dart pub get
+        dart pub global activate --source path .
+      repo: |
+        dart pub get
+        dart pub global activate --source git git@github.com:tmcmaster/flutter_dep_matrix.git
+    deactivate: |
+      dart pub global deactivate flutter_dep_matrix
+      rps clean
+      rm -rf ~/.pub-cache/global_packages/flutter_dep_matrix
+    reactivate:
+      source: |
+        rps global deactivate
+        rps global activate source
+      repo:
+        rps global deactivate
+        rps global activate repo
+    mode: dart pub global list | awk '/ from Git repository / {print "Git"} / at path / {print "Source"}'
   deps:
     tree: dart pub deps
     list: dart pub deps --style=list
