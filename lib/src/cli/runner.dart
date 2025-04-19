@@ -9,10 +9,11 @@ import 'package:flutter_dep_matrix/src/matrix/builder.dart';
 import 'package:flutter_dep_matrix/src/matrix/csv_generator.dart';
 import 'package:flutter_dep_matrix/src/matrix/extractors.dart';
 import 'package:flutter_dep_matrix/src/setup/setup_checks.dart';
-import 'package:logger/logger.dart';
 
 void run(List<String> args) async {
-  Logger.level = Level.all;
+  WTLogger.level = WTLevel.debug;
+
+  final log = createLogger('run', level: WTLevel.debug);
 
   final results = argParser.parse(args);
   if (results['help']) {
@@ -20,47 +21,48 @@ void run(List<String> args) async {
     return;
   }
 
-  log.i(Platform.script.toFilePath());
-
   if (results['debug']) {
-    print('\n===========================================================');
+    log.d('');
+    log.d('===========================================================');
     log.d('Debug log');
     log.i('Info log');
     log.w('Warning log');
     log.e('Error log');
-    print('===========================================================\n');
+    log.t('Trace log');
+    log.d('===========================================================');
+    log.d('');
   }
 
   if (results['setup']) {
-    print('');
+    log.d('');
     final errors = setupChecks();
     if (errors.isNotEmpty) {
-      print('\nProject setup for flutter_dep_matrix is incomplete:\n');
+      log.d('\nProject setup for flutter_dep_matrix is incomplete:\n');
       for (final error in errors) {
-        print('  - $error');
+        log.d('  - $error');
       }
     }
-    print('');
+    log.d('');
     return;
   }
 
   if (results['preview']) {
     if (!(await isExecutableAvailable('vd'))) {
-      print("\n=======================================================");
-      print("To Preview the CSV dependency matrix VisiData is required.");
-      print('The VisiData cli is not on the local execution path.');
-      print('VisiData can be found at https://www.visidata.org/');
-      print('Installing VisiData: https://www.visidata.org/install/');
-      print("=======================================================\n");
+      log.d("\n=======================================================");
+      log.d("To Preview the CSV dependency matrix VisiData is required.");
+      log.d('The VisiData cli is not on the local execution path.');
+      log.d('VisiData can be found at https://www.visidata.org/');
+      log.d('Installing VisiData: https://www.visidata.org/install/');
+      log.d("=======================================================\n");
       exit(1);
     }
   }
   final pubspecFiles = await resolvePubspecFiles(results);
 
   if (results['debug']) {
-    print('================================================');
-    print('Pubspec Files: ${pubspecFiles.map((f) => f.path).join(',')}');
-    print('================================================');
+    log.d('================================================');
+    log.d('Pubspec Files: ${pubspecFiles.map((f) => f.path).join(',')}');
+    log.d('================================================');
   }
 
   final dependencyMatrix = await buildDependencyMatrix(pubspecFiles);
@@ -71,14 +73,13 @@ void run(List<String> args) async {
   }
 
   if (results['tsv']) {
-    print(dependencyMatrix);
+    log.d(dependencyMatrix);
   } else if (results['csv']) {
     final csv = generateCsv(dependencyMatrix);
     if (results['preview']) {
       previewCsvFile(csv);
     } else {
-      print(csv);
+      log.d('==== CSV Dependency Matrix ====\n$csv');
     }
-    print(csv);
   }
 }

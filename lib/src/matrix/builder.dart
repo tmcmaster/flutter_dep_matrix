@@ -1,7 +1,10 @@
 import 'dart:io';
 
+import 'package:flutter_dep_matrix/src/io/logger.dart';
 import 'package:flutter_dep_matrix/src/matrix/extractors.dart';
 import 'package:flutter_dep_matrix/src/model/dependency_matrix.dart';
+
+final _log = createLogger('Builder', level: WTLevel.debug);
 
 Future<DependencyMatrix> buildDependencyMatrix(Set<File> files) async {
   final Map<String, Map<String, String>> matrix = {};
@@ -18,7 +21,7 @@ Future<DependencyMatrix> buildDependencyMatrix(Set<File> files) async {
         ...dependencyVersions,
       };
     } catch (e) {
-      stderr.writeln('Failed to read ${file.path}: $e');
+      _log.e('Failed to read ${file.path}: $e');
     }
   }
 

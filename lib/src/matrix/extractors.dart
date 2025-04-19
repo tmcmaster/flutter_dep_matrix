@@ -1,5 +1,8 @@
+import 'package:flutter_dep_matrix/src/io/logger.dart';
 import 'package:process_run/stdio.dart';
 import 'package:yaml/yaml.dart';
+
+final _log = createLogger('Extractors', level: WTLevel.debug);
 
 Map<String, String> extractDependencies(YamlMap yamlMap) {
   final deps = <String, String>{};
@@ -33,7 +36,7 @@ Future<String?> extractPackageName(File pubspecFile) async {
       return name;
     }
   } catch (e) {
-    stderr.writeln('Failed to extract package name from ${pubspecFile.path}: $e');
+    _log.e('Failed to extract package name from ${pubspecFile.path}: $e');
   }
 
   return null;
@@ -82,7 +85,7 @@ Future<String?> extractPackageName(File pubspecFile) async {
     }
   }
 
-  print('Returning the (packageName, result, pubspec) for : $pubspecFileName');
+  _log.d('Returning the (packageName, result, pubspec) for : $pubspecFileName');
 
   return (packageName, result, pubspec);
 }

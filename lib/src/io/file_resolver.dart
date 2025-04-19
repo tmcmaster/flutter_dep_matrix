@@ -6,6 +6,8 @@ import 'package:flutter_dep_matrix/src/io/logger.dart';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
+final _log = createLogger('FileResolver', level: WTLevel.debug);
+
 Future<Set<File>> resolvePubspecFiles(ArgResults args) async {
   final files = <File>{};
 
@@ -13,7 +15,7 @@ Future<Set<File>> resolvePubspecFiles(ArgResults args) async {
   files.add(pubSpecFile.absolute);
 
   if (!stdin.hasTerminal) {
-    log.d('Loading pubspec files from STDIN.');
+    _log.d('Loading pubspec files from STDIN.');
     final piped = await stdin.transform(utf8.decoder).transform(LineSplitter()).toList();
     for (var line in piped) {
       final trimmedLine = line.trim();
@@ -22,48 +24,48 @@ Future<Set<File>> resolvePubspecFiles(ArgResults args) async {
         if (file.existsSync()) {
           files.add(file.absolute);
         } else {
-          log.w('The file does not exist: ${file.path}');
+          _log.w('The file does not exist: ${file.path}');
         }
       } else {
         final file = File('$trimmedLine/pubspec.yaml');
         if (file.existsSync()) {
           files.add(file.absolute);
         } else {
-          log.w('The file does not exist: ${file.path}');
+          _log.w('The file does not exist: ${file.path}');
         }
       }
     }
   }
 
   for (var path in args['file']) {
-    log.d('Loading pubspec files from --file options.');
+    _log.d('Loading pubspec files from --file options.');
     final file = File(path);
     if (file.existsSync()) {
       files.add(file.absolute);
     } else {
-      log.w('The file does not exist: ${file.path}');
+      _log.w('The file does not exist: ${file.path}');
     }
   }
 
   for (var dirPath in args['dir']) {
-    log.d('Loading pubspec files from --dir options.');
+    _log.d('Loading pubspec files from --dir options.');
     final dir = Directory(dirPath);
     if (dir.existsSync()) {
       final pubspecs =
           dir.listSync(recursive: true).whereType<File>().where((f) => p.basename(f.path) == 'pubspec.yaml');
       files.addAll(pubspecs.map((f) => f.absolute));
     } else {
-      log.w('The directory does not exist: ${dir.path}');
+      _log.w('The directory does not exist: ${dir.path}');
     }
   }
 
   if (args['repos']) {
-    log.d('Loading pubspec files from get repo dependencies.');
+    _log.d('Loading pubspec files from get repo dependencies.');
     final gitRepsPubspecMap = collectOverriddenAndGitPubspecPaths();
     files.addAll(gitRepsPubspecMap.values.toList());
   }
 
-  log.d('Loading pubspec files from --ext options.');
+  _log.d('Loading pubspec files from --ext options.');
   final extPackageFiles = findExternalDependencyPubspecFiles(args['ext']);
   files.addAll(extPackageFiles);
 
@@ -84,21 +86,21 @@ Set<File> findExternalDependencyPubspecFiles(List<String> dependencies) {
         if (packages.containsKey(dependency)) {
           final dep = packages[dependency] as YamlMap?;
           final version = dep?['version'];
-          log.d('About to add dependency pubspec.yaml file for $dependency');
+          _log.d('About to add dependency pubspec.yaml file for $dependency');
           if (version != null) {
             final dependencyPubspecFile = File('$cacheDirString/$dependency-${version}/pubspec.yaml');
-            log.w('Adding the pubspec.yaml file for ${dependency}: ${dependencyPubspecFile.path}');
+            _log.w('Adding the pubspec.yaml file for ${dependency}: ${dependencyPubspecFile.path}');
             files.add(dependencyPubspecFile);
           } else {
-            log.w('The dependency did not have a version: ${file.path}');
+            _log.w('The dependency did not have a version: ${file.path}');
           }
         }
       }
     } else {
-      log.w('The pubspec.lock file does not have a required packages section.');
+      _log.w('The pubspec.lock file does not have a required packages section.');
     }
   } else {
-    log.w('The project does not have a pubspec.lock file');
+    _log.w('The project does not have a pubspec.lock file');
   }
 
   return files;
