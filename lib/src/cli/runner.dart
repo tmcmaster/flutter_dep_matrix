@@ -41,7 +41,7 @@ void run(List<String> args) async {
   }
   final pubspecFiles = await resolvePubspecFiles(results);
 
-  if (results['verbose']) {
+  if (results['debug']) {
     print('================================================');
     print('Pubspec Files: ${pubspecFiles.map((f) => f.path).join(',')}');
     print('================================================');

@@ -9,7 +9,7 @@ Future<Set<File>> resolvePubspecFiles(ArgResults args) async {
   final files = <File>{};
 
   final pubSpecFile = File('pubspec.yaml');
-  files.add(pubSpecFile);
+  files.add(pubSpecFile.absolute);
 
   if (!stdin.hasTerminal) {
     final piped = await stdin.transform(utf8.decoder).transform(LineSplitter()).toList();
@@ -39,31 +39,12 @@ Future<Set<File>> resolvePubspecFiles(ArgResults args) async {
     }
   }
 
-  final packagesReposDir = Directory('packages/repos');
-  if (packagesReposDir.existsSync()) {
-    final repoDirList = packagesReposDir.listSync(recursive: false, followLinks: true).whereType<Directory>().toList();
-    for (final repoDir in repoDirList) {
-      final pubspecFile = '${repoDir.path}/pubspec.yaml';
-      print(pubspecFile);
-      files.add(File(pubspecFile));
-    }
-  }
+  final gitRepsPubspecMap = collectOverriddenAndGitPubspecPaths();
+  files.addAll(gitRepsPubspecMap.values.toList());
 
-  final extPackageName = args['ext'];
-  final extPackageFiles = findExternalDependencyPubspecFiles(extPackageName);
+  final extPackageNames = args['ext'];
+  final extPackageFiles = findExternalDependencyPubspecFiles(extPackageNames);
   files.addAll(extPackageFiles);
-
-  // if (files.isEmpty) {
-  final base = Directory.current;
-  final pubspecs = [
-    // ...base.listSync().whereType<File>().where((f) => p.basename(f.path) == 'pubspec.yaml'),
-    ...base
-        .listSync()
-        .whereType<Directory>()
-        .expand((d) => d.listSync().whereType<File>().where((f) => p.basename(f.path) == 'pubspec.yaml')),
-  ];
-  files.addAll(pubspecs.map((f) => f.absolute));
-  // }
 
   return files;
 }
@@ -71,6 +52,7 @@ Future<Set<File>> resolvePubspecFiles(ArgResults args) async {
 Set<File> findExternalDependencyPubspecFiles(List<String> dependencies) {
   final files = <File>{};
 
+  final cacheDirString = '${Platform.environment['HOME']}/.pub-cache/hosted/pub.dev';
   final file = File('pubspec.lock');
   if (file.existsSync()) {
     final content = file.readAsStringSync();
@@ -82,7 +64,7 @@ Set<File> findExternalDependencyPubspecFiles(List<String> dependencies) {
           final dep = packages[dependency] as YamlMap?;
           final version = dep?['version'];
           if (version != null) {
-            files.add(File('packages/cache/$dependency-${version}/pubspec.yaml'));
+            files.add(File('$cacheDirString/$dependency-${version}/pubspec.yaml'));
           }
         }
       }
@@ -90,4 +72,70 @@ Set<File> findExternalDependencyPubspecFiles(List<String> dependencies) {
   }
 
   return files;
+}
+
+Map<String, File> collectOverriddenAndGitPubspecPaths() {
+  final result = <String, File>{};
+
+  final pubspecYaml = File('pubspec.yaml');
+  final lockFile = File('pubspec.lock');
+  if (!pubspecYaml.existsSync() || !lockFile.existsSync()) {
+    throw Exception('Missing pubspec.yaml or pubspec.lock');
+  }
+
+  final pubspecContent = loadYaml(pubspecYaml.readAsStringSync()) as YamlMap;
+  final lockContent = loadYaml(lockFile.readAsStringSync()) as YamlMap;
+
+  final overridden = <String>{};
+  final overrides = pubspecContent['dependency_overrides'] as YamlMap?;
+  if (overrides != null) {
+    overridden.addAll(overrides.keys.cast<String>());
+  }
+
+  final packages = lockContent['packages'] as YamlMap;
+  final home = Platform.environment['HOME'];
+  final pubCacheGit = '$home/.pub-cache/git';
+  final projectRoot = Directory.current.path;
+
+  for (final entry in packages.entries) {
+    final name = entry.key as String;
+    final data = entry.value as YamlMap;
+    final source = data['source'];
+
+    if (source == 'path' && overridden.contains(name)) {
+      final desc = data['description'] as YamlMap;
+      final rawPath = desc['path'] as String;
+      final absolutePath = desc['relative'] == true ? p.normalize(p.join(projectRoot, rawPath)) : rawPath;
+
+      final pubspecPath = '$absolutePath/pubspec.yaml';
+      if (File(pubspecPath).existsSync()) {
+        result[name] = File(pubspecPath);
+      }
+    }
+
+    if (source == 'git') {
+      final desc = data['description'] as YamlMap;
+      final ref = desc['resolved-ref'] ?? desc['ref'];
+      if (ref == null) continue;
+
+      final folderPrefix = '$pubCacheGit/${name}-$ref';
+      final pubspecPath = '$folderPrefix/pubspec.yaml';
+
+      if (File(pubspecPath).existsSync()) {
+        result[name] = File(pubspecPath);
+      } else {
+        // fallback search
+        final fallbackDir = Directory(pubCacheGit);
+        final match = fallbackDir.listSync(recursive: false).whereType<Directory>().firstWhere(
+              (d) => d.path.contains(name) && File('${d.path}/pubspec.yaml').existsSync(),
+              orElse: () => Directory(''),
+            );
+        if (match.path.isNotEmpty) {
+          result[name] = File('${match.path}/pubspec.yaml');
+        }
+      }
+    }
+  }
+
+  return result;
 }

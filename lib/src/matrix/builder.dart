@@ -16,7 +16,6 @@ Future<DependencyMatrix> buildDependencyMatrix(Set<File> files) async {
       final yamlMap = loadYaml(content);
       final name = yamlMap['name'] as String;
       packageNames.add(name);
-
       final deps = extractDependencies(yamlMap);
       matrix[name] = deps;
     } catch (e) {
