@@ -2,18 +2,33 @@ import 'dart:io';
 
 import 'package:flutter_dep_matrix/src/cli/arg_parser.dart';
 import 'package:flutter_dep_matrix/src/io/file_resolver.dart';
+import 'package:flutter_dep_matrix/src/io/logger.dart';
 import 'package:flutter_dep_matrix/src/io/preview.dart';
 import 'package:flutter_dep_matrix/src/io/utils.dart';
 import 'package:flutter_dep_matrix/src/matrix/builder.dart';
 import 'package:flutter_dep_matrix/src/matrix/csv_generator.dart';
 import 'package:flutter_dep_matrix/src/matrix/extractors.dart';
 import 'package:flutter_dep_matrix/src/setup/setup_checks.dart';
+import 'package:logger/logger.dart';
 
 void run(List<String> args) async {
+  Logger.level = Level.all;
+
   final results = argParser.parse(args);
   if (results['help']) {
     printUsage();
     return;
+  }
+
+  log.i(Platform.script.toFilePath());
+
+  if (results['debug']) {
+    print('\n===========================================================');
+    log.d('Debug log');
+    log.i('Info log');
+    log.w('Warning log');
+    log.e('Error log');
+    print('===========================================================\n');
   }
 
   if (results['setup']) {

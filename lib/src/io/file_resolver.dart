@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/args.dart';
+import 'package:flutter_dep_matrix/src/io/logger.dart';
 import 'package:path/path.dart' as p;
 import 'package:yaml/yaml.dart';
 
@@ -12,40 +13,58 @@ Future<Set<File>> resolvePubspecFiles(ArgResults args) async {
   files.add(pubSpecFile.absolute);
 
   if (!stdin.hasTerminal) {
+    log.d('Loading pubspec files from STDIN.');
     final piped = await stdin.transform(utf8.decoder).transform(LineSplitter()).toList();
     for (var line in piped) {
       final trimmedLine = line.trim();
       if (trimmedLine.endsWith('pubspec.yaml')) {
         final file = File(trimmedLine);
-        if (file.existsSync()) files.add(file.absolute);
+        if (file.existsSync()) {
+          files.add(file.absolute);
+        } else {
+          log.w('The file does not exist: ${file.path}');
+        }
       } else {
         final file = File('$trimmedLine/pubspec.yaml');
-        if (file.existsSync()) files.add(file.absolute);
+        if (file.existsSync()) {
+          files.add(file.absolute);
+        } else {
+          log.w('The file does not exist: ${file.path}');
+        }
       }
     }
   }
 
   for (var path in args['file']) {
+    log.d('Loading pubspec files from --file options.');
     final file = File(path);
-    if (file.existsSync()) files.add(file.absolute);
+    if (file.existsSync()) {
+      files.add(file.absolute);
+    } else {
+      log.w('The file does not exist: ${file.path}');
+    }
   }
 
   for (var dirPath in args['dir']) {
+    log.d('Loading pubspec files from --dir options.');
     final dir = Directory(dirPath);
     if (dir.existsSync()) {
       final pubspecs =
           dir.listSync(recursive: true).whereType<File>().where((f) => p.basename(f.path) == 'pubspec.yaml');
       files.addAll(pubspecs.map((f) => f.absolute));
+    } else {
+      log.w('The directory does not exist: ${dir.path}');
     }
   }
 
   if (args['repos']) {
+    log.d('Loading pubspec files from get repo dependencies.');
     final gitRepsPubspecMap = collectOverriddenAndGitPubspecPaths();
     files.addAll(gitRepsPubspecMap.values.toList());
   }
 
-  final extPackageNames = args['ext'];
-  final extPackageFiles = findExternalDependencyPubspecFiles(extPackageNames);
+  log.d('Loading pubspec files from --ext options.');
+  final extPackageFiles = findExternalDependencyPubspecFiles(args['ext']);
   files.addAll(extPackageFiles);
 
   return (files);
@@ -65,12 +84,21 @@ Set<File> findExternalDependencyPubspecFiles(List<String> dependencies) {
         if (packages.containsKey(dependency)) {
           final dep = packages[dependency] as YamlMap?;
           final version = dep?['version'];
+          log.d('About to add dependency pubspec.yaml file for $dependency');
           if (version != null) {
-            files.add(File('$cacheDirString/$dependency-${version}/pubspec.yaml'));
+            final dependencyPubspecFile = File('$cacheDirString/$dependency-${version}/pubspec.yaml');
+            log.w('Adding the pubspec.yaml file for ${dependency}: ${dependencyPubspecFile.path}');
+            files.add(dependencyPubspecFile);
+          } else {
+            log.w('The dependency did not have a version: ${file.path}');
           }
         }
       }
+    } else {
+      log.w('The pubspec.lock file does not have a required packages section.');
     }
+  } else {
+    log.w('The project does not have a pubspec.lock file');
   }
 
   return files;
@@ -126,7 +154,6 @@ Map<String, File> collectOverriddenAndGitPubspecPaths() {
       if (File(pubspecPath).existsSync()) {
         result[name] = File(pubspecPath);
       } else {
-        // fallback search
         final fallbackDir = Directory(pubCacheGit);
         final match = fallbackDir.listSync(recursive: false).whereType<Directory>().firstWhere(
               (d) => d.path.contains(name) && File('${d.path}/pubspec.yaml').existsSync(),
