@@ -6,6 +6,7 @@ import 'package:flutter_dep_matrix/src/io/preview.dart';
 import 'package:flutter_dep_matrix/src/io/utils.dart';
 import 'package:flutter_dep_matrix/src/matrix/builder.dart';
 import 'package:flutter_dep_matrix/src/matrix/csv_generator.dart';
+import 'package:flutter_dep_matrix/src/matrix/extractors.dart';
 import 'package:flutter_dep_matrix/src/setup/setup_checks.dart';
 
 void run(List<String> args) async {
@@ -48,6 +49,11 @@ void run(List<String> args) async {
   }
 
   final dependencyMatrix = await buildDependencyMatrix(pubspecFiles);
+
+  final (packageName, gitDependencyMap, _) = collectGitDependencyVersions();
+  if (packageName != null && dependencyMatrix.matrix.containsKey(packageName)) {
+    dependencyMatrix.matrix[packageName]!.addAll(gitDependencyMap);
+  }
 
   if (results['tsv']) {
     print(dependencyMatrix);

@@ -1,6 +1,3 @@
-import 'package:flutter_dep_matrix/src/model/git_dependency.dart';
-import 'package:flutter_dep_matrix/src/model/local_dependency.dart';
-import 'package:flutter_dep_matrix/src/model/path_dependency.dart';
 import 'package:process_run/stdio.dart';
 import 'package:yaml/yaml.dart';
 
@@ -25,45 +22,6 @@ Map<String, String> extractDependencies(YamlMap yamlMap) {
   return deps;
 }
 
-Map<String, List<LocalDependency>> extractLocalDependencies(YamlMap yamlMap) {
-  final localDeps = <String, List<LocalDependency>>{};
-
-  void inspectSection(YamlMap? section) {
-    if (section == null) return;
-
-    section.forEach((key, value) {
-      final depName = key.toString();
-      LocalDependency? dep;
-
-      if (value is YamlMap) {
-        if (value.containsKey('path')) {
-          dep = PathDependency(source: value['path'].toString());
-        } else if (value.containsKey('git')) {
-          final git = value['git'];
-          if (git is String) {
-            dep = GitDependency(source: git);
-          } else if (git is YamlMap) {
-            dep = GitDependency(
-              source: git['url'].toString(),
-              ref: git['ref']?.toString(),
-              subPath: git['path']?.toString(),
-            );
-          }
-        }
-      }
-
-      if (dep != null) {
-        localDeps.putIfAbsent(depName, () => []).add(dep);
-      }
-    });
-  }
-
-  inspectSection(yamlMap['dependencies']);
-  inspectSection(yamlMap['dev_dependencies']);
-
-  return localDeps;
-}
-
 Future<String?> extractPackageName(File pubspecFile) async {
   if (!pubspecFile.existsSync()) return null;
 
@@ -79,4 +37,60 @@ Future<String?> extractPackageName(File pubspecFile) async {
   }
 
   return null;
+}
+
+(String?, Map<String, String>, YamlMap pubspecMap) collectGitDependencyVersions([
+  String pubspecFileName = 'pubspec.yaml',
+]) {
+  final result = <String, String>{};
+
+  final pubspecFile = File(pubspecFileName);
+  final lockFile = File('pubspec.lock');
+  if (!pubspecFile.existsSync() || !lockFile.existsSync()) {
+    throw Exception('Missing pubspec.yaml or pubspec.lock');
+  }
+
+  final pubspec = loadYaml(pubspecFile.readAsStringSync()) as YamlMap;
+  final lock = loadYaml(lockFile.readAsStringSync()) as YamlMap;
+  final packages = lock['packages'] as YamlMap;
+
+  final packageName = pubspec['name'];
+
+  final deps = <String>{};
+  if (pubspec['dependencies'] != null) {
+    deps.addAll((pubspec['dependencies'] as YamlMap).keys.cast<String>());
+  }
+  if (pubspec['dev_dependencies'] != null) {
+    deps.addAll((pubspec['dev_dependencies'] as YamlMap).keys.cast<String>());
+  }
+
+  for (final name in deps) {
+    final package = packages[name] as YamlMap?;
+    if (package == null) continue;
+    if (package['source'] != 'git') continue;
+
+    final desc = package['description'] as YamlMap;
+    final resolvedRef = desc['resolved-ref'] as String?;
+    final ref = desc['ref'] as String?;
+    final version = package['version'] as String?;
+
+    if (version != null) {
+      result[name] = version;
+    } else {
+      final shaOrRef = resolvedRef ?? ref ?? 'unknown';
+      result[name] = formatRefOrSha(shaOrRef);
+    }
+  }
+
+  print('Returning the (packageName, result, pubspec) for : $pubspecFileName');
+
+  return (packageName, result, pubspec);
+}
+
+String formatRefOrSha(String refOrResolvedRef) {
+  if (refOrResolvedRef.length >= 20) {
+    return '${refOrResolvedRef.substring(0, 4)}..${refOrResolvedRef.substring(refOrResolvedRef.length - 4)}';
+  } else {
+    return refOrResolvedRef;
+  }
 }

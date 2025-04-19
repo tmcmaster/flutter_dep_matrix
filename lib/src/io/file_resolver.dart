@@ -39,14 +39,16 @@ Future<Set<File>> resolvePubspecFiles(ArgResults args) async {
     }
   }
 
-  final gitRepsPubspecMap = collectOverriddenAndGitPubspecPaths();
-  files.addAll(gitRepsPubspecMap.values.toList());
+  if (args['repos']) {
+    final gitRepsPubspecMap = collectOverriddenAndGitPubspecPaths();
+    files.addAll(gitRepsPubspecMap.values.toList());
+  }
 
   final extPackageNames = args['ext'];
   final extPackageFiles = findExternalDependencyPubspecFiles(extPackageNames);
   files.addAll(extPackageFiles);
 
-  return files;
+  return (files);
 }
 
 Set<File> findExternalDependencyPubspecFiles(List<String> dependencies) {
